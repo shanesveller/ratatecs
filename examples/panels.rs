@@ -4,10 +4,10 @@ fn main() {
     App::new()
         .add_plugins((
             RatatEcsPlugins,
-            app::component,
-            counter::component,
-            progress::component,
-            popup::component,
+            app::panel,
+            counter::panel,
+            progress::panel,
+            popup::panel,
         ))
         .run();
 }
@@ -18,7 +18,7 @@ mod app {
     use ratatui::widgets::Block;
     use symbols::border;
 
-    pub fn component(app: &mut App) {
+    pub fn panel(app: &mut App) {
         app.add_systems(Update, exit_on_esc);
         app.add_systems(PostUpdate, render);
     }
@@ -65,7 +65,7 @@ mod counter {
     #[derive(Resource)]
     struct Counter(u32);
 
-    pub fn component(app: &mut App) {
+    pub fn panel(app: &mut App) {
         app.insert_resource(Counter(0));
 
         app.add_systems(Update, change_counter);
@@ -131,7 +131,7 @@ mod progress {
     #[derive(Resource)]
     struct Progress(u16);
 
-    pub fn component(app: &mut App) {
+    pub fn panel(app: &mut App) {
         app.insert_resource(Progress(0));
 
         app.add_systems(Update, change_progress);
@@ -201,7 +201,7 @@ mod popup {
         Closed,
     }
 
-    pub fn component(app: &mut App) {
+    pub fn panel(app: &mut App) {
         app.init_state::<PopupState>();
         app.add_systems(Update, toggle_popup);
         app.add_systems(PostUpdate, render.run_if(in_state(PopupState::Open)));
