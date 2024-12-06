@@ -1,10 +1,10 @@
 # Ratatecs
 
-Experiment with [Bevy ECS](https://bevyengine.org) and [Ratatui](https://ratatui.rs) to build TUI with completely isolated components.
+Experiment with [Bevy ECS](https://bevyengine.org) and [Ratatui](https://ratatui.rs) to build TUI with completely isolated panels (group of widgets).
 
-- Component inner state is stored in the ECS
-- Component selection through State
-- Each component pushes a z-ordered list of widgets that are rendered at the end of the frame
+- Panel inner state is stored in the ECS
+- Panel selection through State
+- Each panel pushes a z-ordered list of widgets that are rendered at the end of the frame
 
 Bevy handles the run loop, storing state in the world, and passing the needed arguments to each function through dependency injection.
 
@@ -13,14 +13,14 @@ Bevy handles the run loop, storing state in the world, and passing the needed ar
 
 ## Example Usage
 
-![example with 5 components](https://raw.githubusercontent.com/vleue/ratatecs/main/ratatecs.gif)
+![example with 5 panels](https://raw.githubusercontent.com/vleue/ratatecs/main/ratatecs.gif)
 
 ```rust,no_run
 use ratatecs::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins((RatatEcsPlugins, app::component))
+        .add_plugins((RatatEcsPlugins, app::panel))
         .run();
 }
 
@@ -32,14 +32,14 @@ mod app {
     #[derive(Resource)]
     struct Counter(u32);
 
-    pub fn component(app: &mut App) {
-        // Store the state of this component in the world
+    pub fn panel(app: &mut App) {
+        // Store the state of this panel in the world
         app.insert_resource(Counter(0));
 
         // Systems that update the state or react to user inputs
         app.add_systems(Update, (exit_on_esc, change_counter));
 
-        // System to render thos component
+        // System to render thos panel
         app.add_systems(PostUpdate, render);
     }
 

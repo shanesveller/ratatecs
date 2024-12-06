@@ -1,9 +1,7 @@
 use ratatecs::prelude::*;
 
 fn main() {
-    App::new()
-        .add_plugins((RatatEcsPlugins, app::component))
-        .run();
+    App::new().add_plugins((RatatEcsPlugins, app::panel)).run();
 }
 
 mod app {
@@ -14,14 +12,14 @@ mod app {
     #[derive(Resource)]
     struct Counter(u32);
 
-    pub fn component(app: &mut App) {
-        // Store the state of this component in the world
+    pub fn panel(app: &mut App) {
+        // Store the state of this panel in the world
         app.insert_resource(Counter(0));
 
         // Systems that update the state or react to user inputs
         app.add_systems(Update, (exit_on_esc, change_counter));
 
-        // System to render thos component
+        // System to render thos panel
         app.add_systems(PostUpdate, render);
     }
 
