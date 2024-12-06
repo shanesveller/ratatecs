@@ -8,14 +8,15 @@ use bevy_app::{
 };
 use bevy_ecs::{
     event::EventReader,
-    system::{NonSend, NonSendMut, ResMut, Resource},
+    system::{NonSend, NonSendMut, ResMut, Resource, SystemParam},
 };
 use bevy_state::app::StatesPlugin;
-use ratatui::{prelude::CrosstermBackend, widgets::WidgetRef, Terminal};
+use ratatui::{prelude::CrosstermBackend, widgets::WidgetRef, Frame, Terminal};
 
 pub mod prelude {
     pub use crate::{
-        BackendEvent, RatatEcsPlugins, ScopedWidget, TerminalWrapper, TuiPlugin, WidgetsToDraw,
+        BackendEvent, RatatEcsPlugins, ScopedWidget, TerminalWrapper, TuiPlugin, WidgetDrawer,
+        WidgetsToDraw,
     };
     pub use bevy_app::prelude::*;
     pub use bevy_app::AppExit;
@@ -97,12 +98,37 @@ pub struct WidgetsToDraw {
     pub widgets: Vec<ScopedWidget>,
 }
 
-fn render(mut terminal: NonSendMut<TerminalWrapper>, mut widgets: NonSendMut<WidgetsToDraw>) {
-    let _ = terminal.terminal.draw(|frame| {
+fn render(mut widget_drawer: WidgetDrawer) {
+    let _ = widget_drawer.terminal.terminal.draw(|frame| {
         let buf = frame.buffer_mut();
-        widgets.widgets.sort_by_key(|sw| sw.z_order);
-        for ScopedWidget { widget, area, .. } in widgets.widgets.drain(..) {
+        widget_drawer.widgets.widgets.sort_by_key(|sw| sw.z_order);
+        for ScopedWidget { widget, area, .. } in widget_drawer.widgets.widgets.drain(..) {
             widget.render_ref(area, buf);
         }
     });
+}
+
+#[derive(SystemParam)]
+pub struct WidgetDrawer<'w> {
+    widgets: NonSendMut<'w, WidgetsToDraw>,
+    terminal: NonSendMut<'w, TerminalWrapper>,
+}
+
+impl<'w> WidgetDrawer<'w> {
+    pub fn push_widget(
+        &mut self,
+        widget: Box<dyn WidgetRef>,
+        area: ratatui::prelude::Rect,
+        z_order: u32,
+    ) {
+        self.widgets.widgets.push(ScopedWidget {
+            widget,
+            area,
+            z_order,
+        });
+    }
+
+    pub fn get_frame(&mut self) -> Frame {
+        self.terminal.terminal.get_frame()
+    }
 }

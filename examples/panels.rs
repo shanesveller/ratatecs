@@ -33,8 +33,8 @@ mod app {
         }
     }
 
-    fn render(mut terminal: NonSendMut<TerminalWrapper>, mut widgets: NonSendMut<WidgetsToDraw>) {
-        let frame = terminal.terminal.get_frame();
+    fn render(mut drawer: WidgetDrawer) {
+        let frame = drawer.get_frame();
         let area = frame.area();
 
         let title = Line::from(" My Great TUI ".bold());
@@ -49,11 +49,7 @@ mod app {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        widgets.widgets.push(ScopedWidget {
-            widget: Box::new(block),
-            area,
-            z_order: 0,
-        });
+        drawer.push_widget(Box::new(block), area, 0);
     }
 }
 
@@ -84,12 +80,8 @@ mod counter {
         }
     }
 
-    fn render(
-        counter: Res<Counter>,
-        mut terminal: NonSendMut<TerminalWrapper>,
-        mut widgets: NonSendMut<WidgetsToDraw>,
-    ) {
-        let frame = terminal.terminal.get_frame();
+    fn render(counter: Res<Counter>, mut drawer: WidgetDrawer) {
+        let frame = drawer.get_frame();
         let area = frame.area();
         let area = Rect {
             x: area.x + 10,
@@ -115,11 +107,11 @@ mod counter {
             counter.0.to_string().yellow(),
         ])]);
 
-        widgets.widgets.push(ScopedWidget {
-            widget: Box::new(Paragraph::new(counter_text).centered().block(block)),
+        drawer.push_widget(
+            Box::new(Paragraph::new(counter_text).centered().block(block)),
             area,
-            z_order: 1,
-        });
+            1,
+        );
     }
 }
 
@@ -150,12 +142,8 @@ mod progress {
         }
     }
 
-    fn render(
-        progress: Res<Progress>,
-        mut terminal: NonSendMut<TerminalWrapper>,
-        mut widgets: NonSendMut<WidgetsToDraw>,
-    ) {
-        let frame = terminal.terminal.get_frame();
+    fn render(progress: Res<Progress>, mut drawer: WidgetDrawer) {
+        let frame = drawer.get_frame();
         let area = frame.area();
         let area = Rect {
             x: area.width / 2 + area.x + 10,
@@ -176,16 +164,16 @@ mod progress {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        widgets.widgets.push(ScopedWidget {
-            widget: Box::new(
+        drawer.push_widget(
+            Box::new(
                 Gauge::default()
                     .block(block)
                     .gauge_style(Style::new().white().on_black().italic())
                     .percent(progress.0),
             ),
             area,
-            z_order: 1,
-        });
+            1,
+        );
     }
 }
 
@@ -224,8 +212,8 @@ mod popup {
         }
     }
 
-    fn render(mut terminal: NonSendMut<TerminalWrapper>, mut widgets: NonSendMut<WidgetsToDraw>) {
-        let frame = terminal.terminal.get_frame();
+    fn render(mut drawer: WidgetDrawer) {
+        let frame = drawer.get_frame();
         let area = frame.area();
         let area = Rect {
             x: area.width / 2 - 50,
@@ -239,13 +227,9 @@ mod popup {
             .title(title.centered())
             .border_set(border::THICK);
 
-        widgets.widgets.push(ScopedWidget {
-            widget: Box::new(Clear),
-            area,
-            z_order: 2,
-        });
-        widgets.widgets.push(ScopedWidget {
-            widget: Box::new(
+        drawer.push_widget(Box::new(Clear), area, 2);
+        drawer.push_widget(
+            Box::new(
                 Paragraph::new(Text::from(vec![Line::from(vec![
                     "Hello from ".into(),
                     "ratatecs".red().bold(),
@@ -259,7 +243,7 @@ mod popup {
                 .block(block),
             ),
             area,
-            z_order: 2,
-        });
+            2,
+        );
     }
 }

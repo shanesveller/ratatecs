@@ -19,9 +19,7 @@ Bevy handles the run loop, storing state in the world, and passing the needed ar
 use ratatecs::prelude::*;
 
 fn main() {
-    App::new()
-        .add_plugins((RatatEcsPlugins, app::panel))
-        .run();
+    App::new().add_plugins((RatatEcsPlugins, app::panel)).run();
 }
 
 mod app {
@@ -65,12 +63,8 @@ mod app {
         }
     }
 
-    fn render(
-        counter: Res<Counter>,
-        mut terminal: NonSendMut<TerminalWrapper>,
-        mut widgets: NonSendMut<WidgetsToDraw>,
-    ) {
-        let frame = terminal.terminal.get_frame();
+    fn render(counter: Res<Counter>, mut drawer: WidgetDrawer) {
+        let frame = drawer.get_frame();
         let area = frame.area();
 
         let title = Line::from(" My Great TUI ".bold());
@@ -92,11 +86,11 @@ mod app {
             counter.0.to_string().yellow(),
         ])]);
 
-        widgets.widgets.push(ScopedWidget {
-            widget: Box::new(Paragraph::new(counter_text).centered().block(block)),
+        drawer.push_widget(
+            Box::new(Paragraph::new(counter_text).centered().block(block)),
             area,
-            z_order: 0,
-        });
+            0,
+        );
     }
 }
 ```
