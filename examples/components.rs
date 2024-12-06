@@ -1,16 +1,15 @@
 use ratatecs::prelude::*;
 
 fn main() {
-    let mut app = App::new_tui();
-
-    app.add_plugins((
-        app::component,
-        counter::component,
-        progress::component,
-        popup::component,
-    ));
-
-    app.run();
+    App::new()
+        .add_plugins((
+            RatatEcsPlugins,
+            app::component,
+            counter::component,
+            progress::component,
+            popup::component,
+        ))
+        .run();
 }
 
 mod app {

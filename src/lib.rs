@@ -3,7 +3,9 @@
 
 use std::{io::Stdout, time::Duration};
 
-use bevy_app::{App, AppExit, Last, PostUpdate, ScheduleRunnerPlugin};
+use bevy_app::{
+    App, AppExit, Last, Plugin, PluginGroup, PluginGroupBuilder, PostUpdate, ScheduleRunnerPlugin,
+};
 use bevy_ecs::{
     event::EventReader,
     system::{NonSend, NonSendMut, ResMut, Resource},
@@ -12,7 +14,9 @@ use bevy_state::app::StatesPlugin;
 use ratatui::{prelude::CrosstermBackend, widgets::WidgetRef, Terminal};
 
 pub mod prelude {
-    pub use crate::{BackendEvent, Ratatapp, ScopedWidget, TerminalWrapper, WidgetsToDraw};
+    pub use crate::{
+        BackendEvent, RatatEcsPlugins, ScopedWidget, TerminalWrapper, TuiPlugin, WidgetsToDraw,
+    };
     pub use bevy_app::prelude::*;
     pub use bevy_app::AppExit;
     pub use bevy_ecs::prelude::*;
@@ -21,24 +25,15 @@ pub mod prelude {
     pub use ratatui::prelude::*;
 }
 
-pub trait Ratatapp {
-    fn new_tui() -> Self;
-}
-
 pub struct TerminalWrapper {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
 }
 
-impl Ratatapp for bevy_app::App {
-    fn new_tui() -> Self {
-        let mut app = App::new();
+pub struct TuiPlugin;
 
+impl Plugin for TuiPlugin {
+    fn build(&self, app: &mut App) {
         app.insert_resource(BackendEvent(None));
-
-        app.add_plugins((
-            ScheduleRunnerPlugin::run_loop(Duration::from_millis(0)),
-            StatesPlugin,
-        ));
 
         app.add_systems(Last, (get_backend_events, cleanup_on_exit));
         app.add_systems(PostUpdate, render);
@@ -46,8 +41,23 @@ impl Ratatapp for bevy_app::App {
         let terminal = ratatui::init();
         app.insert_non_send_resource(TerminalWrapper { terminal });
         app.insert_non_send_resource(WidgetsToDraw { widgets: vec![] });
+    }
+}
 
-        app
+pub struct RatatEcsPlugins;
+
+impl PluginGroup for RatatEcsPlugins {
+    fn build(self) -> bevy_app::PluginGroupBuilder {
+        let mut builder = PluginGroupBuilder::start::<Self>();
+        builder = builder.add(TuiPlugin);
+        builder = builder.add(StatesPlugin);
+        builder = builder.add(ScheduleRunnerPlugin {
+            run_mode: bevy_app::RunMode::Loop {
+                wait: Some(Duration::from_millis(0)),
+            },
+        });
+
+        builder
     }
 }
 

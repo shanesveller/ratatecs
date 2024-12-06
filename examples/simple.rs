@@ -1,11 +1,9 @@
 use ratatecs::prelude::*;
 
 fn main() {
-    let mut app = App::new_tui();
-
-    app.add_plugins((app::component,));
-
-    app.run();
+    App::new()
+        .add_plugins((RatatEcsPlugins, app::component))
+        .run();
 }
 
 mod app {
@@ -17,9 +15,13 @@ mod app {
     struct Counter(u32);
 
     pub fn component(app: &mut App) {
+        // Store the state of this component in the world
         app.insert_resource(Counter(0));
 
+        // Systems that update the state or react to user inputs
         app.add_systems(Update, (exit_on_esc, change_counter));
+
+        // System to render thos component
         app.add_systems(PostUpdate, render);
     }
 
