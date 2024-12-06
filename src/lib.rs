@@ -114,7 +114,7 @@ pub struct WidgetDrawer<'w> {
     terminal: NonSendMut<'w, TerminalWrapper>,
 }
 
-impl<'w> WidgetDrawer<'w> {
+impl WidgetDrawer<'_> {
     pub fn push_widget(
         &mut self,
         widget: Box<dyn WidgetRef>,
