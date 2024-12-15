@@ -12,6 +12,7 @@ use bevy_ecs::{
 };
 use bevy_state::app::StatesPlugin;
 use ratatui::{
+    backend::TestBackend,
     prelude::{Backend, CrosstermBackend},
     widgets::WidgetRef,
     Frame, Terminal,
@@ -34,7 +35,33 @@ pub struct TerminalWrapper<B: Backend> {
     pub terminal: Terminal<B>,
 }
 
-pub struct TuiPlugin;
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum BackendKind {
+    /// [`ratatui::backend::CrosstermBackend`] over [`std::io::Stdout`]
+    #[default]
+    Crossterm,
+    /// [`ratatui::backend::TestBackend`]
+    Test,
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub struct TuiPlugin {
+    backend: BackendKind,
+    size: Option<(u16, u16)>,
+}
+
+impl TuiPlugin {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn test_backend(width: u16, height: u16) -> Self {
+        Self {
+            backend: BackendKind::Test,
+            size: Some((width, height)),
+        }
+    }
+}
 
 impl Plugin for TuiPlugin {
     fn build(&self, app: &mut App) {
@@ -47,20 +74,51 @@ impl Plugin for TuiPlugin {
                 cleanup_on_exit::<CrosstermBackend<Stdout>>,
             ),
         );
-        app.add_systems(PostUpdate, render::<CrosstermBackend<Stdout>>);
+        match self.backend {
+            BackendKind::Crossterm => {
+                app.add_systems(PostUpdate, render::<CrosstermBackend<Stdout>>);
+                let terminal = ratatui::init();
+                app.insert_non_send_resource(TerminalWrapper { terminal });
+            }
+            BackendKind::Test => {
+                app.add_systems(PostUpdate, render::<TestBackend>);
+                let (width, height) = self.size.expect("test backend requires size");
+                let terminal = Terminal::new(TestBackend::new(width, height))
+                    .expect("TestBackend should never fail");
+                app.insert_non_send_resource(TerminalWrapper { terminal });
+            }
+        };
 
-        let terminal = ratatui::init();
-        app.insert_non_send_resource(TerminalWrapper { terminal });
         app.insert_non_send_resource(WidgetsToDraw { widgets: vec![] });
     }
 }
 
-pub struct RatatEcsPlugins;
+#[derive(Debug, Default, PartialEq)]
+pub struct RatatEcsPlugins {
+    backend: BackendKind,
+    size: Option<(u16, u16)>,
+}
+
+impl RatatEcsPlugins {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn test_backend(width: u16, height: u16) -> Self {
+        Self {
+            backend: BackendKind::Test,
+            size: Some((width, height)),
+        }
+    }
+}
 
 impl PluginGroup for RatatEcsPlugins {
     fn build(self) -> bevy_app::PluginGroupBuilder {
         let mut builder = PluginGroupBuilder::start::<Self>();
-        builder = builder.add(TuiPlugin);
+        builder = builder.add(TuiPlugin {
+            backend: self.backend,
+            size: self.size,
+        });
         builder = builder.add(StatesPlugin);
         builder = builder.add(ScheduleRunnerPlugin {
             run_mode: bevy_app::RunMode::Loop {

@@ -5,7 +5,7 @@ use ratatecs::prelude::*;
 fn main() {
     App::new()
         .add_plugins((
-            RatatEcsPlugins,
+            RatatEcsPlugins::default(),
             app::panel::<CrosstermBackend<Stdout>>,
             counter::panel::<CrosstermBackend<Stdout>>,
             progress::panel::<CrosstermBackend<Stdout>>,

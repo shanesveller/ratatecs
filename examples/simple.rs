@@ -4,7 +4,10 @@ use ratatecs::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins((RatatEcsPlugins, app::panel::<CrosstermBackend<Stdout>>))
+        .add_plugins((
+            RatatEcsPlugins::default(),
+            app::panel::<CrosstermBackend<Stdout>>,
+        ))
         .run();
 }
 

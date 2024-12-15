@@ -19,7 +19,7 @@ Bevy handles the run loop, storing state in the world, and passing the needed ar
 use ratatecs::prelude::*;
 
 fn main() {
-    App::new().add_plugins((RatatEcsPlugins, app::panel)).run();
+    App::new().add_plugins((RatatEcsPlugins::default(), app::panel)).run();
 }
 
 mod app {
