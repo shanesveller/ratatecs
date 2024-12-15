@@ -8,5 +8,5 @@ license = "MIT OR Apache-2.0"
 bevy_app = { version = "0.15.0", default-features = false }
 bevy_ecs = { version = "0.15.0", default-features = false }
 bevy_state = { version = "0.15.0", default-features = false, features = [ "bevy_app" ] }
-crossterm = "0.28.1"
+crossterm = { version = "0.28.1", default-features = false }
 ratatui = { version = "0.29.0", features = ["unstable-widget-ref"] }
