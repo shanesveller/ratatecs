@@ -1,13 +1,15 @@
+use std::io::Stdout;
+
 use ratatecs::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins((
             RatatEcsPlugins,
-            app::panel,
-            counter::panel,
-            progress::panel,
-            popup::panel,
+            app::panel::<CrosstermBackend<Stdout>>,
+            counter::panel::<CrosstermBackend<Stdout>>,
+            progress::panel::<CrosstermBackend<Stdout>>,
+            popup::panel::<CrosstermBackend<Stdout>>,
         ))
         .run();
 }
@@ -18,9 +20,12 @@ mod app {
     use ratatui::widgets::Block;
     use symbols::border;
 
-    pub fn panel(app: &mut App) {
+    pub fn panel<B>(app: &mut App)
+    where
+        B: Backend + 'static,
+    {
         app.add_systems(Update, exit_on_esc);
-        app.add_systems(PostUpdate, render);
+        app.add_systems(PostUpdate, render::<B>);
     }
 
     fn exit_on_esc(event: Res<BackendEvent>, mut exit: EventWriter<AppExit>) {
@@ -33,7 +38,10 @@ mod app {
         }
     }
 
-    fn render(mut drawer: WidgetDrawer) {
+    fn render<B>(mut drawer: WidgetDrawer<B>)
+    where
+        B: Backend,
+    {
         let frame = drawer.get_frame();
         let area = frame.area();
 
@@ -61,11 +69,11 @@ mod counter {
     #[derive(Resource)]
     struct Counter(u32);
 
-    pub fn panel(app: &mut App) {
+    pub fn panel<B: Backend + 'static>(app: &mut App) {
         app.insert_resource(Counter(0));
 
         app.add_systems(Update, change_counter);
-        app.add_systems(PostUpdate, render);
+        app.add_systems(PostUpdate, render::<B>);
     }
 
     fn change_counter(mut counter: ResMut<Counter>, event: Res<BackendEvent>) {
@@ -80,7 +88,7 @@ mod counter {
         }
     }
 
-    fn render(counter: Res<Counter>, mut drawer: WidgetDrawer) {
+    fn render<B: Backend + 'static>(counter: Res<Counter>, mut drawer: WidgetDrawer<B>) {
         let frame = drawer.get_frame();
         let area = frame.area();
         let area = Rect {
@@ -123,11 +131,11 @@ mod progress {
     #[derive(Resource)]
     struct Progress(u16);
 
-    pub fn panel(app: &mut App) {
+    pub fn panel<B: Backend + 'static>(app: &mut App) {
         app.insert_resource(Progress(0));
 
         app.add_systems(Update, change_progress);
-        app.add_systems(PostUpdate, render);
+        app.add_systems(PostUpdate, render::<B>);
     }
 
     fn change_progress(mut progress: ResMut<Progress>, event: Res<BackendEvent>) {
@@ -142,7 +150,7 @@ mod progress {
         }
     }
 
-    fn render(progress: Res<Progress>, mut drawer: WidgetDrawer) {
+    fn render<B: Backend + 'static>(progress: Res<Progress>, mut drawer: WidgetDrawer<B>) {
         let frame = drawer.get_frame();
         let area = frame.area();
         let area = Rect {
@@ -189,10 +197,10 @@ mod popup {
         Closed,
     }
 
-    pub fn panel(app: &mut App) {
+    pub fn panel<B: Backend + 'static>(app: &mut App) {
         app.init_state::<PopupState>();
         app.add_systems(Update, toggle_popup);
-        app.add_systems(PostUpdate, render.run_if(in_state(PopupState::Open)));
+        app.add_systems(PostUpdate, render::<B>.run_if(in_state(PopupState::Open)));
     }
 
     fn toggle_popup(
@@ -212,7 +220,7 @@ mod popup {
         }
     }
 
-    fn render(mut drawer: WidgetDrawer) {
+    fn render<B: Backend + 'static>(mut drawer: WidgetDrawer<B>) {
         let frame = drawer.get_frame();
         let area = frame.area();
         let area = Rect {

@@ -23,6 +23,7 @@ fn main() {
 }
 
 mod app {
+    use std::io::Stdout;
     use ratatecs::prelude::*;
     use ratatui::widgets::{Block, Paragraph};
     use symbols::border;
@@ -38,7 +39,7 @@ mod app {
         app.add_systems(Update, (exit_on_esc, change_counter));
 
         // System to render thos panel
-        app.add_systems(PostUpdate, render);
+        app.add_systems(PostUpdate, render::<CrosstermBackend<Stdout>>);
     }
 
     fn exit_on_esc(event: Res<BackendEvent>, mut exit: EventWriter<AppExit>) {
@@ -63,7 +64,7 @@ mod app {
         }
     }
 
-    fn render(counter: Res<Counter>, mut drawer: WidgetDrawer) {
+    fn render<B: Backend + 'static>(counter: Res<Counter>, mut drawer: WidgetDrawer<B>) {
         let frame = drawer.get_frame();
         let area = frame.area();
 

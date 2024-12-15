@@ -1,7 +1,11 @@
+use std::io::Stdout;
+
 use ratatecs::prelude::*;
 
 fn main() {
-    App::new().add_plugins((RatatEcsPlugins, app::panel)).run();
+    App::new()
+        .add_plugins((RatatEcsPlugins, app::panel::<CrosstermBackend<Stdout>>))
+        .run();
 }
 
 mod app {
@@ -12,7 +16,7 @@ mod app {
     #[derive(Resource)]
     struct Counter(u32);
 
-    pub fn panel(app: &mut App) {
+    pub fn panel<B: Backend + 'static>(app: &mut App) {
         // Store the state of this panel in the world
         app.insert_resource(Counter(0));
 
@@ -20,7 +24,7 @@ mod app {
         app.add_systems(Update, (exit_on_esc, change_counter));
 
         // System to render thos panel
-        app.add_systems(PostUpdate, render);
+        app.add_systems(PostUpdate, render::<B>);
     }
 
     fn exit_on_esc(event: Res<BackendEvent>, mut exit: EventWriter<AppExit>) {
@@ -45,7 +49,7 @@ mod app {
         }
     }
 
-    fn render(counter: Res<Counter>, mut drawer: WidgetDrawer) {
+    fn render<B: Backend>(counter: Res<Counter>, mut drawer: WidgetDrawer<B>) {
         let frame = drawer.get_frame();
         let area = frame.area();
 

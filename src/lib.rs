@@ -11,7 +11,11 @@ use bevy_ecs::{
     system::{NonSend, NonSendMut, ResMut, Resource, SystemParam},
 };
 use bevy_state::app::StatesPlugin;
-use ratatui::{prelude::CrosstermBackend, widgets::WidgetRef, Frame, Terminal};
+use ratatui::{
+    prelude::{Backend, CrosstermBackend},
+    widgets::WidgetRef,
+    Frame, Terminal,
+};
 
 pub mod prelude {
     pub use crate::{
@@ -26,8 +30,8 @@ pub mod prelude {
     pub use ratatui::prelude::*;
 }
 
-pub struct TerminalWrapper {
-    pub terminal: Terminal<CrosstermBackend<Stdout>>,
+pub struct TerminalWrapper<B: Backend> {
+    pub terminal: Terminal<B>,
 }
 
 pub struct TuiPlugin;
@@ -36,8 +40,14 @@ impl Plugin for TuiPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(BackendEvent(None));
 
-        app.add_systems(Last, (get_backend_events, cleanup_on_exit));
-        app.add_systems(PostUpdate, render);
+        app.add_systems(
+            Last,
+            (
+                get_backend_events,
+                cleanup_on_exit::<CrosstermBackend<Stdout>>,
+            ),
+        );
+        app.add_systems(PostUpdate, render::<CrosstermBackend<Stdout>>);
 
         let terminal = ratatui::init();
         app.insert_non_send_resource(TerminalWrapper { terminal });
@@ -82,7 +92,10 @@ fn get_backend_events(mut event: ResMut<BackendEvent>) {
     }
 }
 
-fn cleanup_on_exit(_: NonSend<TerminalWrapper>, exits: EventReader<AppExit>) {
+fn cleanup_on_exit<B>(_: NonSend<TerminalWrapper<B>>, exits: EventReader<AppExit>)
+where
+    B: Backend,
+{
     if !exits.is_empty() {
         ratatui::restore();
     }
@@ -98,7 +111,10 @@ pub struct WidgetsToDraw {
     pub widgets: Vec<ScopedWidget>,
 }
 
-fn render(mut widget_drawer: WidgetDrawer) {
+fn render<B>(mut widget_drawer: WidgetDrawer<B>)
+where
+    B: Backend,
+{
     let _ = widget_drawer.terminal.terminal.draw(|frame| {
         let buf = frame.buffer_mut();
         widget_drawer.widgets.widgets.sort_by_key(|sw| sw.z_order);
@@ -109,12 +125,18 @@ fn render(mut widget_drawer: WidgetDrawer) {
 }
 
 #[derive(SystemParam)]
-pub struct WidgetDrawer<'w> {
+pub struct WidgetDrawer<'w, B>
+where
+    B: Backend + 'static,
+{
     widgets: NonSendMut<'w, WidgetsToDraw>,
-    terminal: NonSendMut<'w, TerminalWrapper>,
+    terminal: NonSendMut<'w, TerminalWrapper<B>>,
 }
 
-impl WidgetDrawer<'_> {
+impl<B> WidgetDrawer<'_, B>
+where
+    B: Backend + 'static,
+{
     pub fn push_widget(
         &mut self,
         widget: Box<dyn WidgetRef>,
