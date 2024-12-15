@@ -54,6 +54,7 @@ macro_rules! backend_plugin {
 }
 
 backend_plugin!(TuiPlugin, CrosstermBackend<Stdout>);
+backend_plugin!(TuiTestPlugin, ratatui::backend::TestBackend);
 
 #[macro_export]
 macro_rules! backend_plugin_group {
@@ -78,6 +79,7 @@ macro_rules! backend_plugin_group {
 }
 
 backend_plugin_group!(RatatEcsPlugins, TuiPlugin);
+backend_plugin_group!(RatatEcsTestPlugins, TuiTestPlugin);
 
 #[derive(Resource)]
 pub struct BackendEvent(pub Option<crossterm::event::Event>);
