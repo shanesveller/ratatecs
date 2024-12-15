@@ -34,43 +34,50 @@ pub struct TerminalWrapper<B: Backend> {
     pub terminal: Terminal<B>,
 }
 
-pub struct TuiPlugin;
+#[macro_export]
+macro_rules! backend_plugin {
+    ($plugin_name:ident, $backend_ty:ty) => {
+        pub struct $plugin_name;
+        impl Plugin for $plugin_name {
+            fn build(&self, app: &mut App) {
+                app.insert_resource(BackendEvent(None));
 
-impl Plugin for TuiPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(BackendEvent(None));
+                app.add_systems(Last, (get_backend_events, cleanup_on_exit::<$backend_ty>));
+                app.add_systems(PostUpdate, render::<$backend_ty>);
 
-        app.add_systems(
-            Last,
-            (
-                get_backend_events,
-                cleanup_on_exit::<CrosstermBackend<Stdout>>,
-            ),
-        );
-        app.add_systems(PostUpdate, render::<CrosstermBackend<Stdout>>);
-
-        let terminal = ratatui::init();
-        app.insert_non_send_resource(TerminalWrapper { terminal });
-        app.insert_non_send_resource(WidgetsToDraw { widgets: vec![] });
-    }
+                let terminal = ratatui::init();
+                app.insert_non_send_resource(TerminalWrapper { terminal });
+                app.insert_non_send_resource(WidgetsToDraw { widgets: vec![] });
+            }
+        }
+    };
 }
 
-pub struct RatatEcsPlugins;
+backend_plugin!(TuiPlugin, CrosstermBackend<Stdout>);
 
-impl PluginGroup for RatatEcsPlugins {
-    fn build(self) -> bevy_app::PluginGroupBuilder {
-        let mut builder = PluginGroupBuilder::start::<Self>();
-        builder = builder.add(TuiPlugin);
-        builder = builder.add(StatesPlugin);
-        builder = builder.add(ScheduleRunnerPlugin {
-            run_mode: bevy_app::RunMode::Loop {
-                wait: Some(Duration::from_millis(0)),
-            },
-        });
+#[macro_export]
+macro_rules! backend_plugin_group {
+    ($group_name:ident, $backend_plugin:ident) => {
+        pub struct $group_name;
 
-        builder
-    }
+        impl PluginGroup for $group_name {
+            fn build(self) -> bevy_app::PluginGroupBuilder {
+                let mut builder = PluginGroupBuilder::start::<Self>();
+                builder = builder.add($backend_plugin);
+                builder = builder.add(StatesPlugin);
+                builder = builder.add(ScheduleRunnerPlugin {
+                    run_mode: bevy_app::RunMode::Loop {
+                        wait: Some(Duration::from_millis(0)),
+                    },
+                });
+
+                builder
+            }
+        }
+    };
 }
+
+backend_plugin_group!(RatatEcsPlugins, TuiPlugin);
 
 #[derive(Resource)]
 pub struct BackendEvent(pub Option<crossterm::event::Event>);
