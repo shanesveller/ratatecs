@@ -169,7 +169,7 @@ pub struct WidgetsToDraw {
     pub widgets: Vec<ScopedWidget>,
 }
 
-fn render<B>(mut widget_drawer: WidgetDrawer<B>)
+pub fn render<B>(mut widget_drawer: WidgetDrawer<B>)
 where
     B: Backend,
 {
